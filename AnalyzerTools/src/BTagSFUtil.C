@@ -287,7 +287,7 @@ float BTagSFUtil::GetJetSFPeriodDependant(int JetFlavor, float JetPt, float JetE
 }
 
 
-bool BTagSFUtil::IsUncorrectedTagged(float JetDiscriminant, int JetFlavor, float JetPt, float JetEta) {
+bool BTagSFUtil::IsUncorrectedTagged(float JetDiscriminant){
   /// return false if year is not set                                                                                                                                                                       
   if (DataYear == 0) return false;
 
