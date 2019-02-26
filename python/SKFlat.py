@@ -470,6 +470,7 @@ void {2}(){{
   m.Loop();
 
   m.WriteHist();
+  m.WriteTree();
 
 }'''
     out.close()

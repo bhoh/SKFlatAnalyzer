@@ -17,5 +17,7 @@
 #pragma link C++ class SkimTree_LRSMHighPt+;
 
 #pragma link C++ class CHMuJets+;
+#pragma link C++ class TSCorr_input+;
+#pragma link C++ class FitterInput+;
 
 #endif

@@ -4,6 +4,7 @@
 #include "TLorentzVector.h"
 #include "TString.h"
 #include "TMath.h"
+#include "TTree.h"
 #include <sstream>      
 
 #include "SKFlatNtuple.h"
@@ -23,6 +24,8 @@
 #include "CFBackgroundEstimator.h"
 #include "BTagSFUtil.h"
 #include "PDFReweight.h"
+
+#include "GenMatching_CHToCB.h"
 
 #define M_Z 91.1876
 #define M_W 80.379
@@ -124,6 +127,7 @@ public:
   //===== Estimators
 
   MCCorrection *mcCorr;
+  GenMatching_CHToCB *parton_jet_matching_CHToCB;
   FakeBackgroundEstimator *fakeEst;
   CFBackgroundEstimator *cfEst;
   void initializeAnalyzerTools();
@@ -145,7 +149,8 @@ public:
   void BtaggingSFEvtbyEvt(std::vector<Jet> &jets, Jet::Tagger tagger, Jet::WP WP, int systematic,
                         float &btag_sf, float &mistag_sf);
   int GetNBTags(std::vector<Jet> &jets, Jet::Tagger tagger, Jet::WP WP);
- 
+  std::vector<bool> GetBTagVector(std::vector<Jet> &jets, Jet::Tagger tagger, Jet::WP WP);
+
   //==== Using new PDF set
   PDFReweight *pdfReweight;
   double GetPDFWeight(LHAPDF::PDF* pdf_);
@@ -229,6 +234,10 @@ public:
                   int n_biny, double *ybins);
 
   virtual void WriteHist();
+
+  //==== out Tree
+  std::map<TString, TTree *> mapTree;
+  void WriteTree();
 
   //==== Quick Plotters
   void FillLeptonPlots(std::vector<Lepton *> leps, TString this_region, double weight);

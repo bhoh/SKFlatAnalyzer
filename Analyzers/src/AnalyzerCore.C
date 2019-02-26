@@ -7,6 +7,7 @@ AnalyzerCore::AnalyzerCore(){
   cfEst = new CFBackgroundEstimator();
   pdfReweight = new PDFReweight();
 
+  parton_jet_matching_CHToCB = new GenMatching_CHToCB();
 }
 
 AnalyzerCore::~AnalyzerCore(){
@@ -871,6 +872,37 @@ int AnalyzerCore::GetNBTags(std::vector<Jet> &jets, Jet::Tagger tagger, Jet::WP 
     }
   }
   return nbtags;
+}
+
+//=== author : BHO
+//=== Ref : AnalyzerCore::IsBTagged
+std::vector<bool> AnalyzerCore::GetBTagVector(std::vector<Jet> &jets, Jet::Tagger tagger, Jet::WP WP){
+  std::vector<bool> out_btag_vector;
+  //=== loop over jet vector
+  for(std::vector<Jet>::iterator itjet = jets.begin(); itjet!=jets.end(); itjet++){
+    //=== create key from configuration
+    TString map_key = itjet->TaggerString(tagger) + "_"+  itjet->WPString(WP) ;
+
+    if(itjet->hadronFlavour() == 0 || IsDATA) map_key += "_lf";
+    else map_key +="_hf";
+
+    //=== use key to access correct BTagSFUtil object
+    std::map<TString,BTagSFUtil*>::iterator it_jet_btagger = MapBTagSF.find(map_key);
+
+    if(it_jet_btagger == MapBTagSF.end()){
+      cout << "[AnalyzerCore::IsBTaggedCorrected]  ERROR, incorrect combination of tagger/WP : " << itjet->TaggerString(tagger) <<  "/" << itjet->WPString(WP) << " check SetupBTagger is correctly configured for tagger/WP and systematics" << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    if(it_jet_btagger->second->IsUncorrectedTagged(itjet->GetTaggerResult(tagger))){
+      out_btag_vector.push_back(true);
+    }
+    else{
+      out_btag_vector.push_back(false);
+    }
+  }
+
+  return out_btag_vector;
 }
 
 //=== author : BHO
@@ -2016,6 +2048,12 @@ void AnalyzerCore::WriteHist(){
 
 }
 
+void AnalyzerCore::WriteTree(){
+  outfile->cd();
+  for(std::map<TString, TTree *>::iterator it = mapTree.begin(); it!=mapTree.end(); it++){
+    it->second->Write();
+  }
+}
 
 void AnalyzerCore::FillLeptonPlots(std::vector<Lepton *> leps, TString this_region, double weight){
 
