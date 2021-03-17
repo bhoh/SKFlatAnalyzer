@@ -413,6 +413,19 @@ void ExampleRun_kinFitter::executeEventFromParameter(AnalyzerParameter param){
     cout << " ExampleRun_kinFitter, jet_vector.size() != btag_vector.size()" << endl;
     exit(1);
   }
+
+  int matched_hadronic_top_b_jet_idx = matcher->Get_hadronic_top_b_jet()->jet_index;
+  int matched_leptonic_top_b_jet_idx = matcher->Get_leptonic_top_b_jet()->jet_index;
+
+  if(btag_vector.at(matched_hadronic_top_b_jet_idx) == false ||
+     btag_vector.at(matched_leptonic_top_b_jet_idx) == false){
+    return;
+  }
+
+  FillHist(param.Name+"/MatchedJet_btagged_"+param.Name, 0., 1., 1, 0., 1.);
+
+
+
   lepton = (TLorentzVector)(muons.at(0));
   //fitter = new TKinFitterDriver(DataYear);
   fitter->SetAllObjects(jet_vector,
@@ -428,8 +441,6 @@ void ExampleRun_kinFitter::executeEventFromParameter(AnalyzerParameter param){
 
   FillHist(param.Name+"/PassFitter_"+param.Name, 0., 1., 1, 0., 1.);
 
-  int matched_hadronic_top_b_jet_idx = matcher->Get_hadronic_top_b_jet()->jet_index;
-  int matched_leptonic_top_b_jet_idx = matcher->Get_leptonic_top_b_jet()->jet_index;
 
   int assigned_hadronic_top_b_jet_idx = fitter_results->at(0).hadronic_top_b_jet_idx;
   int assigned_leptonic_top_b_jet_idx = fitter_results->at(0).leptonic_top_b_jet_idx;
