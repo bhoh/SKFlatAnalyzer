@@ -3,6 +3,7 @@
 
 #include "AnalyzerCore.h"
 #include "TKinFitterDriver.h"
+#include "GenMatching_CHToCB.h"
 
 class ExampleRun_kinFitter : public AnalyzerCore {
 
@@ -32,7 +33,7 @@ public:
 private:
 
   TKinFitterDriver* fitter;
-
+  GenMatching_CHToCB* matcher;
 };
 
 

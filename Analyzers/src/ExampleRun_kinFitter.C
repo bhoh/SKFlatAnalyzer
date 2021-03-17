@@ -18,12 +18,12 @@ void ExampleRun_kinFitter::initializeAnalyzer(){
   //==== Dimuon Z-peak with two muon IDs
   //==== I defined "vector<TString> MuonIDs;" in Analyzers/include/ExampleRun_kinFitter.h
   MuonIDs = {
-    "POGMedium",
+    //"POGMedium",
     "POGTight"
   };
   //==== corresponding Muon ID SF Keys for mcCorr->MuonID_SF()
   MuonIDSFKeys = {
-    "NUM_MediumID_DEN_genTracks",
+    //"NUM_MediumID_DEN_genTracks",
     "NUM_TightID_DEN_genTracks",
   };
 
@@ -92,12 +92,14 @@ void ExampleRun_kinFitter::initializeAnalyzer(){
   cout << "[ExampleRun_kinFitter::initializeAnalyzer] RunXSecSyst = " << RunXSecSyst << endl;
 
   fitter = new TKinFitterDriver(DataYear);
+  matcher = new GenMatching_CHToCB();
 }
 
 ExampleRun_kinFitter::~ExampleRun_kinFitter(){
 
   //==== Destructor of this Analyzer
   delete fitter;
+  delete matcher;
 }
 
 void ExampleRun_kinFitter::executeEvent(){
@@ -316,6 +318,10 @@ void ExampleRun_kinFitter::executeEventFromParameter(AnalyzerParameter param){
 
   vector<Muon> muons = SelectMuons(this_AllMuons, param.Muon_Tight_ID, 20., 2.4);
   vector<Jet> jets = SelectJets(this_AllJets, param.Jet_ID, 30., 2.4);
+  vector<Gen> gens = GetGens();
+
+  TLorentzVector met{};
+  met    = GetEvent().GetMETVector();
 
   //=======================
   //==== Sort in pt-order
@@ -368,14 +374,38 @@ void ExampleRun_kinFitter::executeEventFromParameter(AnalyzerParameter param){
   if( muons.at(0).Pt() <= TriggerSafePtCut ) return;
 
   if(jets.size()<4) return;
-  if(NBJets_NoSF<2) return;
+  if(NBJets_NoSF!=2) return;
+  if(met.Pt()<=20) return;
+
+  FillHist(param.Name+"/BaseLineCut_"+param.Name, 0., 1., 1, 0., 1.);
+
+  //===================
+  //=== Set jet-parton matcher
+  //===================
+  matcher->SetGens(gens);
+  matcher->SetJets(jets);
+
+  if(!matcher->FindHardProcessParton()) return; // find parton from hard process
+
+  FillHist(param.Name+"/FindHardProcessParton_"+param.Name, 0., 1., 1, 0., 1.);
+
+  if(!matcher->MatchJets()) return; // match parton-jet min-delta R
+
+  FillHist(param.Name+"/MatchJets_"+param.Name, 0., 1., 1, 0., 1.);
+
+  if(!matcher->CheckFlavour()) return; // check flavour
+
+  FillHist(param.Name+"/CheckPartonFlavour_"+param.Name, 0., 1., 1, 0., 1.);
+
+  if(!matcher->CheckAmbiguity()) return; // check ambiguity matching
+
+  FillHist(param.Name+"/NoAmbiguityMatching_"+param.Name, 0., 1., 1, 0., 1.);
 
   //=======================
   //==== Kinematic Fitter
   //=======================
   std::vector<TLorentzVector> jet_vector{};
   TLorentzVector lepton{};
-  TLorentzVector met{};
   for(auto& jet : jets){
     jet_vector.emplace_back(jet.Px(),jet.Py(),jet.Pz(),jet.E());
   }
@@ -384,7 +414,7 @@ void ExampleRun_kinFitter::executeEventFromParameter(AnalyzerParameter param){
     exit(1);
   }
   lepton = (TLorentzVector)(muons.at(0));
-  met    = GetEvent().GetMETVector();
+  //fitter = new TKinFitterDriver(DataYear);
   fitter->SetAllObjects(jet_vector,
         	        btag_vector,
         		lepton,
@@ -393,6 +423,18 @@ void ExampleRun_kinFitter::executeEventFromParameter(AnalyzerParameter param){
   fitter->FindBestChi2Fit();
   auto fitter_results = fitter->GetResults();
 
+
+  if(fitter_results->size()==0) return;
+
+  FillHist(param.Name+"/PassFitter_"+param.Name, 0., 1., 1, 0., 1.);
+
+  int matched_hadronic_top_b_jet_idx = matcher->Get_hadronic_top_b_jet()->jet_index;
+  int matched_leptonic_top_b_jet_idx = matcher->Get_leptonic_top_b_jet()->jet_index;
+
+  int assigned_hadronic_top_b_jet_idx = fitter_results->at(0).hadronic_top_b_jet_idx;
+  int assigned_leptonic_top_b_jet_idx = fitter_results->at(0).leptonic_top_b_jet_idx;
+
+  double muon_charge = muons.at(0).Charge();
 
 
   //===================
@@ -434,11 +476,15 @@ void ExampleRun_kinFitter::executeEventFromParameter(AnalyzerParameter param){
   //==== Now fill histograms
   //==========================
   
-  if(fitter_results->size()>0){
-    double fitted_dijet_M = fitter_results->at(0).fitted_dijet_M;
-    FillHist(param.Name+"/WCan_Mass_"+param.Name,fitted_dijet_M, weight, 40, 0., 200.);
-  }
+  double fitted_dijet_M = fitter_results->at(0).fitted_dijet_M;
+  FillHist(param.Name+"/WCan_Mass_"+param.Name,fitted_dijet_M, weight, 40, 0., 200.);
+  FillHist(param.Name+"/MuonCharge_"+param.Name, muon_charge, weight, 20,-2,2);
+  FillHist(param.Name+"/True_had_top_b_"+param.Name, matched_hadronic_top_b_jet_idx==assigned_hadronic_top_b_jet_idx, weight, 2,0,2);
+  FillHist(param.Name+"/True_lep_top_b_"+param.Name, matched_leptonic_top_b_jet_idx==assigned_leptonic_top_b_jet_idx, weight, 2,0,2);
+  FillHist(param.Name+"/True_had_lep_top_b_"+param.Name, matched_hadronic_top_b_jet_idx==assigned_hadronic_top_b_jet_idx && matched_leptonic_top_b_jet_idx==assigned_leptonic_top_b_jet_idx, weight, 2,0,2);
 
+
+  //delete fitter;
 }
 
 
