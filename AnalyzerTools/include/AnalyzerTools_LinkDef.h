@@ -18,5 +18,6 @@
 #pragma link C++ class RocelecoR+;
 #pragma link C++ class TSCorrection+;
 #pragma link C++ class TKinFitterDriver+;
+#pragma link C++ class GenMatching_CHToCB+;
 
 #endif
