@@ -261,6 +261,7 @@ private:
   //TFitConstraintMGaus_mod *constrain_leptonic_top_MGaus;
   TFitConstraintM *constrain_leptonic_W_M;
   //TFitConstraintMGaus_mod *constrain_leptonic_W_MGaus;
+  TFitConstraintM *constrain_hadronic_W_M;
 
   TKinFitterDriver::ResultContainer fit_result;
 

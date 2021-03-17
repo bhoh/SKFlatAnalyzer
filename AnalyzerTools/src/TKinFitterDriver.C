@@ -47,6 +47,7 @@ TKinFitterDriver::TKinFitterDriver(int DataYear_){
   //constrain_leptonic_top_MGaus = new TFitConstraintMGaus_mod("leptonic_top_mass_constraint", "leptonic_top_mass_constraint", 0, 0, 172.5, 1.5);
   constrain_leptonic_W_M = new TFitConstraintM("leptonic_w_mass_constraint", "leptonic_w_mass_constraint", 0, 0, 80.4);
   //constrain_leptonic_W_MGaus = new TFitConstraintMGaus_mod("leptonic_w_mass_constraint", "leptonic_w_mass_constraint", 0, 0, 80.4, 2.085);
+  constrain_hadronic_W_M = new TFitConstraintM("hadronic_w_mass_constraint", "hadronic_w_mass_constraint", 0, 0, 80.4);
   //cout <<"TKinFitterDriver::TKinFitterDriver : initialized" << endl;
 }
 
@@ -68,6 +69,7 @@ TKinFitterDriver::~TKinFitterDriver(){
   //delete constrain_leptonic_top_MGaus;
   delete constrain_leptonic_W_M;
   //delete constrain_leptonic_W_MGaus;
+  delete constrain_hadronic_W_M;
   delete ts_correction;
 }
 
@@ -534,6 +536,9 @@ void TKinFitterDriver::SetConstraint(){
   constrain_leptonic_W_M->addParticles1(fit_neutrino_pxpypz, fit_lepton); // lepton is included in fit_neutrino_pz
   //constrain_leptonic_W_MGaus->Clear();
   //constrain_leptonic_W_MGaus->addParticles1(fit_lepton, fit_neutrino_pxpy, fit_neutrino_pz);
+  constrain_hadronic_W_M->Clear();
+  new(constrain_hadronic_W_M) TFitConstraintM("hadronic_w_mass_constraint", "hadronic_w_mass_constraint", 0, 0, 80.4);
+  constrain_hadronic_W_M->addParticles1(fit_hadronic_w_ch_jet1, fit_hadronic_w_ch_jet2);
 }
 
 
@@ -560,6 +565,7 @@ void TKinFitterDriver::SetFitter(){
   //fitter->addConstraint( constrain_leptonic_top_MGaus );
   fitter->addConstraint( constrain_leptonic_W_M );
   //fitter->addConstraint( constrain_leptonic_W_MGaus );
+  fitter->addConstraint( constrain_hadronic_W_M );
   //Set convergence criteria
   fitter->setMaxNbIter( 50 ); //50 is default
   fitter->setMaxDeltaS( 1e-2 );
@@ -710,6 +716,7 @@ double TKinFitterDriver::CalcChi2(TString option){
   }
   // mass constraints
   chi2 += this->CalcEachChi2(constrain_leptonic_W_M, 2.085);
+  chi2 += this->CalcEachChi2(constrain_hadronic_W_M, 2.085);
   //chi2 += this->CalcEachChi2(constrain_leptonic_W_MGaus);
   //chi2 += this->CalcEachChi2(constrain_hadronic_top_MGaus);
   chi2 += this->CalcEachChi2(constrain_hadronic_top_M, 1.5);
